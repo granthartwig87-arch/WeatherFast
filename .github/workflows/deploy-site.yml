@@ -1,0 +1,40 @@
+name: Deploy web app to site
+
+# Publishes webapp/ to the gh-pages branch, which GitHub Pages serves at
+# https://granthartwig87-arch.github.io/WeatherFast/
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'webapp/**'
+      - '.github/workflows/deploy-site.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-site
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assemble site (leave out dev-only files)
+        run: |
+          mkdir site
+          cp -r webapp/. site/
+          cd site
+          rm -rf debug.html table-test.html *.backup tests node_modules coverage \
+                 package.json package-lock.json babel.config.js check-integrity.sh \
+                 create_icons.py start-server.* "Start FastWeather Web.command" *.md
+
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
